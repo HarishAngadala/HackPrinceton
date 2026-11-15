@@ -106,7 +106,7 @@ async function drain(){
  $('caption').textContent=r.text.trim();$('captionWrap').hidden=false;
  const li=document.createElement('li');const seconds=ms=>(ms/1000).toFixed(2)+'s';
  li.textContent=`${r.text} | capture ${seconds(clip.stopped-clip.began)} · queue ${seconds(sent-clip.stopped)} · request ${seconds(now-sent)} · start-to-text ${seconds(now-clip.began)} | server preprocess ${r.preprocess_ms}ms · inference ${r.inference_ms}ms · total ${r.total_ms}ms | local receive ${r.receive_ms??'?'}ms · proxy ${r.proxy_ms}ms`;
- $('history').prepend(li);note=r.heyclicky_submitted?'Transcript submitted to HeyClicky as typed input.':'Transcript received. Review before use.';
+ $('history').prepend(li);note=r.heyclicky_submitted?'Transcript submitted to HeyClicky as typed input.':r.heyclicky_error?`Transcript received, but automatic HeyClicky delivery failed: ${r.heyclicky_error}`:'Transcript received. Review before use.';
  }catch(e){fail(e.message);}finally{busy=false;render();drain();maybeCapture();}
 }
 function capture(){

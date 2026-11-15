@@ -4,7 +4,11 @@ import Foundation
 
 private let heyClickyBundleID = "com.humansongs.clicky"
 private let leftControlKey: CGKeyCode = 59
+private let aKey: CGKeyCode = 0
+private let vKey: CGKeyCode = 9
 private let commaKey: CGKeyCode = 43
+private let returnKey: CGKeyCode = 36
+private let escapeKey: CGKeyCode = 53
 
 private struct Options {
     var submit = true
@@ -127,26 +131,144 @@ private func isWritableTextInput(_ element: AXUIElement) -> Bool {
         && settable.boolValue
 }
 
-private func postControlTap() throws {
-    guard let down = CGEvent(keyboardEventSource: nil, virtualKey: leftControlKey, keyDown: true),
-          let up = CGEvent(keyboardEventSource: nil, virtualKey: leftControlKey, keyDown: false) else {
-        throw InputError("could not create the keyboard event used to open HeyClicky's text input")
+private func windowArea(for element: AXUIElement) -> CGFloat {
+    guard let rawWindow = copyAttribute(element, kAXWindowAttribute as CFString),
+          CFGetTypeID(rawWindow) == AXUIElementGetTypeID() else {
+        return .greatestFiniteMagnitude
     }
-    down.flags = .maskControl
-    up.flags = []
-    down.post(tap: .cghidEventTap)
-    up.post(tap: .cghidEventTap)
+    let window = unsafeBitCast(rawWindow, to: AXUIElement.self)
+    guard let rawSizeValue = copyAttribute(window, kAXSizeAttribute as CFString),
+          CFGetTypeID(rawSizeValue) == AXValueGetTypeID() else {
+        return .greatestFiniteMagnitude
+    }
+    let rawSize = unsafeBitCast(rawSizeValue, to: AXValue.self)
+    var size = CGSize.zero
+    guard AXValueGetValue(rawSize, .cgSize, &size) else {
+        return .greatestFiniteMagnitude
+    }
+    return size.width * size.height
+}
+
+private func postControlTap() throws {
+    try runSystemEventsScript("""
+        key down control
+        delay 0.08
+        key up control
+        """, purpose: "open HeyClicky's text input")
+}
+
+private func runSystemEventsScript(_ body: String, purpose: String) throws {
+    let source = """
+        tell application "System Events"
+        \(body)
+        end tell
+        """
+    guard let script = NSAppleScript(source: source) else {
+        throw InputError("could not prepare the keyboard automation used to \(purpose)")
+    }
+    var details: NSDictionary?
+    script.executeAndReturnError(&details)
+    if let details {
+        let message = details[NSAppleScript.errorMessage] as? String ?? "unknown System Events error"
+        throw InputError("could not \(purpose): \(message)")
+    }
+}
+
+private func postKey(_ key: CGKeyCode, flags: CGEventFlags = []) throws {
+    let modifier = flags.contains(.maskCommand) ? " using command down" : ""
+    try runSystemEventsScript(
+        "key code \(key)\(modifier)",
+        purpose: "send keyboard input to HeyClicky"
+    )
+    Thread.sleep(forTimeInterval: 0.05)
 }
 
 private func postCommandComma() throws {
-    guard let down = CGEvent(keyboardEventSource: nil, virtualKey: commaKey, keyDown: true),
-          let up = CGEvent(keyboardEventSource: nil, virtualKey: commaKey, keyDown: false) else {
-        throw InputError("could not create the keyboard event used to open HeyClicky")
+    try postKey(commaKey, flags: .maskCommand)
+}
+
+private typealias PasteboardSnapshot = [[NSPasteboard.PasteboardType: Data]]
+
+private func snapshotPasteboard(_ pasteboard: NSPasteboard) -> PasteboardSnapshot {
+    (pasteboard.pasteboardItems ?? []).map { item in
+        var values: [NSPasteboard.PasteboardType: Data] = [:]
+        for type in item.types {
+            if let data = item.data(forType: type) {
+                values[type] = data
+            }
+        }
+        return values
     }
-    down.flags = .maskCommand
-    up.flags = .maskCommand
-    down.post(tap: .cghidEventTap)
-    up.post(tap: .cghidEventTap)
+}
+
+private func restorePasteboard(_ snapshot: PasteboardSnapshot, to pasteboard: NSPasteboard) {
+    pasteboard.clearContents()
+    let items = snapshot.map { values in
+        let item = NSPasteboardItem()
+        for (type, data) in values {
+            item.setData(data, forType: type)
+        }
+        return item
+    }
+    if !items.isEmpty {
+        pasteboard.writeObjects(items)
+    }
+}
+
+private func pasteText(_ text: String, into input: AXUIElement) throws {
+    guard AXUIElementSetAttributeValue(input, kAXFocusedAttribute as CFString, kCFBooleanTrue) == .success else {
+        throw InputError("could not focus HeyClicky's typed input")
+    }
+    Thread.sleep(forTimeInterval: 0.08)
+    try postKey(aKey, flags: .maskCommand)
+
+    let pasteboard = NSPasteboard.general
+    let savedPasteboard = snapshotPasteboard(pasteboard)
+    pasteboard.clearContents()
+    guard pasteboard.setString(text, forType: .string) else {
+        restorePasteboard(savedPasteboard, to: pasteboard)
+        throw InputError("could not prepare the transcript for keyboard input")
+    }
+
+    do {
+        try postKey(vKey, flags: .maskCommand)
+        // Let the target app consume the paste before restoring the user's clipboard.
+        Thread.sleep(forTimeInterval: 0.2)
+    } catch {
+        restorePasteboard(savedPasteboard, to: pasteboard)
+        throw error
+    }
+    restorePasteboard(savedPasteboard, to: pasteboard)
+
+    let deadline = Date().addingTimeInterval(1)
+    repeat {
+        if stringAttribute(input, kAXValueAttribute as CFString) == text { return }
+        RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    } while Date() < deadline
+    throw InputError("HeyClicky did not accept the transcript as keyboard input")
+}
+
+private func pasteTextIntoFocusedInput(_ text: String) throws {
+    // The notch composer is a nonstandard floating window. System Events gives
+    // it real keyboard focus, while forcing AX focus can select a hidden Home
+    // field instead. Keep the complete interaction on the native keyboard path.
+    try postKey(aKey, flags: .maskCommand)
+
+    let pasteboard = NSPasteboard.general
+    let savedPasteboard = snapshotPasteboard(pasteboard)
+    pasteboard.clearContents()
+    guard pasteboard.setString(text, forType: .string) else {
+        restorePasteboard(savedPasteboard, to: pasteboard)
+        throw InputError("could not prepare the transcript for keyboard input")
+    }
+    do {
+        try postKey(vKey, flags: .maskCommand)
+        Thread.sleep(forTimeInterval: 0.25)
+    } catch {
+        restorePasteboard(savedPasteboard, to: pasteboard)
+        throw error
+    }
+    restorePasteboard(savedPasteboard, to: pasteboard)
 }
 
 private func openHeyClickyTextInput() throws {
@@ -179,7 +301,16 @@ private func runningHeyClicky() throws -> NSRunningApplication {
 
 private func findInput(in root: AXUIElement) -> AXUIElement? {
     let inputs = descendants(of: root).filter(isWritableTextInput)
-    return inputs.first(where: { boolAttribute($0, kAXFocusedAttribute as CFString) == true }) ?? inputs.first
+    // HeyClicky keeps full-size background surfaces in its accessibility tree.
+    // The double-Control composer is the smaller foreground panel, so prefer its
+    // input instead of a stale field belonging to a hidden Home window.
+    return inputs.sorted { left, right in
+        let leftArea = windowArea(for: left)
+        let rightArea = windowArea(for: right)
+        if leftArea != rightArea { return leftArea < rightArea }
+        return boolAttribute(left, kAXFocusedAttribute as CFString) == true
+            && boolAttribute(right, kAXFocusedAttribute as CFString) != true
+    }.first
 }
 
 private func findSendButton(in root: AXUIElement) -> AXUIElement? {
@@ -224,6 +355,15 @@ private func waitForEnabledSendButton(in root: AXUIElement, timeout: TimeInterva
     return nil
 }
 
+private func waitForSubmission(of text: String, from input: AXUIElement, timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    repeat {
+        if stringAttribute(input, kAXValueAttribute as CFString) != text { return true }
+        RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    } while Date() < deadline
+    return false
+}
+
 private func openFullChat(in root: AXUIElement, timeout: TimeInterval) throws -> AXUIElement? {
     try postCommandComma()
     let deadline = Date().addingTimeInterval(timeout)
@@ -250,38 +390,23 @@ private func send(_ text: String, options: Options) throws {
 
     let app = try runningHeyClicky()
     app.activate(options: [.activateAllWindows])
-    let root = AXUIElementCreateApplication(app.processIdentifier)
 
     // HeyClicky's native shortcut for typed input is a double-tap of Control.
     // This avoids changing or imitating its voice-recognition path.
+    try postKey(escapeKey)
+    Thread.sleep(forTimeInterval: 0.15)
     try openHeyClickyTextInput()
-    let shortcutWait = min(1.5, options.timeout)
-    let input: AXUIElement?
-    if let shortcutInput = waitForInput(in: root, timeout: shortcutWait) {
-        input = shortcutInput
-    } else {
-        input = try openFullChat(in: root, timeout: options.timeout - shortcutWait)
-    }
-
-    guard let input else {
-        throw InputError("HeyClicky's typed input did not appear")
-    }
-    guard AXUIElementSetAttributeValue(input, kAXValueAttribute as CFString, text as CFTypeRef) == .success else {
-        throw InputError("could not place the transcript in HeyClicky's typed input")
-    }
-    _ = AXUIElementSetAttributeValue(input, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+    Thread.sleep(forTimeInterval: 0.45)
+    try pasteTextIntoFocusedInput(text)
 
     if !options.submit {
         print("Transcript placed in HeyClicky; Send was not pressed.")
         return
     }
 
-    guard let sendButton = waitForEnabledSendButton(in: root, timeout: 1.5) else {
-        throw InputError("the transcript was inserted, but HeyClicky's Send button did not become available; the text was left for review")
-    }
-    guard AXUIElementPerformAction(sendButton, kAXPressAction as CFString) == .success else {
-        throw InputError("the transcript was inserted, but HeyClicky's Send button could not be pressed; the text was left for review")
-    }
+    // Return is HeyClicky's native keyboard submission path.
+    try postKey(returnKey)
+    Thread.sleep(forTimeInterval: 0.2)
     print("Transcript submitted to HeyClicky as typed input.")
 }
 

@@ -110,6 +110,18 @@ class BackendTests(HTTPTestCase):
         self.assertTrue(json.loads(body)['heyclicky_submitted'])
         submit.assert_called_once_with('open notes')
 
+    def test_transcript_survives_heyclicky_delivery_failure(self):
+        server.HEYCLICKY_EXECUTABLE = Path('/test/silent-agent')
+        recognized = {'text': 'open notes', 'audio_used': False}
+        with patch.object(server, 'transcribe', return_value=recognized), \
+             patch.object(server, 'submit_to_heyclicky', side_effect=RuntimeError('delivery failed')):
+            code, body = self.call('/api/transcribe', b'video', {'Content-Type':'video/webm'})
+        self.assertEqual(code, 200)
+        payload = json.loads(body)
+        self.assertEqual(payload['text'], 'open notes')
+        self.assertFalse(payload['heyclicky_submitted'])
+        self.assertEqual(payload['heyclicky_error'], 'delivery failed')
+
     def test_reject_invalid_type_and_busy(self):
         self.assertEqual(self.call('/api/transcribe', b'video', {'Content-Type':'text/plain'})[0], 415)
         with server.BUSY:

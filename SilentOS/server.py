@@ -251,7 +251,13 @@ class Handler(BaseHTTPRequestHandler):
                 path = Path(folder) / ('clip.webm' if mime == 'video/webm' else 'clip.mp4')
                 path.write_bytes(data)
                 result = transcribe(path, BASE_URL)
-            result['heyclicky_submitted'] = submit_to_heyclicky(result['text'])
+            try:
+                result['heyclicky_submitted'] = submit_to_heyclicky(result['text'])
+            except Exception as exc:
+                # FLARE already produced a valid transcript. Preserve and return it
+                # even if the separate local HeyClicky handoff fails.
+                result['heyclicky_submitted'] = False
+                result['heyclicky_error'] = str(exc)
             result['receive_ms'] = round((started - received) * 1000)
             result['proxy_ms'] = round((time.monotonic() - started) * 1000)
             self.send(200, result)
