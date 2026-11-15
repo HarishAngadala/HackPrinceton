@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090d19"><title>SilentOS</title>
+<style>
+:root{color-scheme:dark;--ink:#f2f4ff;--muted:#9ca8c3;--line:#ffffff18;--glass:linear-gradient(135deg,#ffffff0f,#ffffff03)}
+*{box-sizing:border-box}body{margin:0;background:#090d19;color:var(--ink);font:14px/1.5 'Segoe UI',system-ui,sans-serif;min-height:100vh}button,select,textarea{font:inherit}button,select{color:inherit}button{cursor:pointer}button:disabled{opacity:.32;cursor:default}button:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid #b1c7ff;outline-offset:5px}button{transition:background .2s,transform .2s}button:not(:disabled):hover{background-color:#ffffff20;transform:translateY(-1px)}
+.prism{position:fixed;inset:0;z-index:-1;overflow:hidden;background:radial-gradient(ellipse at 15% 0%,#17316688,transparent 50%),radial-gradient(ellipse at 95% 70%,#47276560,transparent 50%),#090d19}.prism:before,.prism:after{content:'';position:absolute;inset:-40%;background:conic-gradient(from 70deg at 50% 50%,transparent 15%,#588cff22 25%,transparent 32%,#ab80ff20 50%,transparent 60%,#4ce1d31c 75%,transparent 85%);filter:blur(45px);animation:drift 35s ease-in-out infinite alternate;transform:rotate(-25deg)}.prism:after{animation-delay:-18s;mix-blend-mode:screen;transform:rotate(65deg);opacity:.65}@keyframes drift{to{transform:rotate(20deg) scale(1.2) translate(5%,4%)}}
+.shell{max-width:1800px;margin:auto;padding:28px 40px 24px}.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:34px}.brand{font-size:25px;font-weight:650;letter-spacing:-1.2px;display:flex;align-items:center;gap:12px}.brand-mark{width:30px;height:30px;display:flex;align-items:center;gap:3px;justify-content:center;transform:rotate(-12deg)}.brand-mark i{width:4px;border-radius:8px;background:linear-gradient(#e2eaff,#7c9bd0);height:17px}.brand-mark i:nth-child(2){height:28px}.brand-mark i:nth-child(3){height:22px}.topnote{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px}.pill{border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(24px);border-radius:30px;padding:7px 12px;display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.04em}.dot{width:6px;height:6px;border-radius:50%;background:#87e2c1;box-shadow:0 0 12px #87e2c166}.intro{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.eyebrow{text-transform:uppercase;letter-spacing:.2em;color:#a2b2d7;font-size:10px;font-weight:600;margin:0 0 8px}h1{font-size:clamp(28px,3vw,42px);font-weight:450;line-height:1.2;letter-spacing:-1.6px;margin:0}h1 span{color:#9eaac5}.intro p{color:var(--muted);margin:0;font-size:13px}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:stretch}.glass{background:var(--glass);border:1px solid var(--line);box-shadow:inset 0 1px 0 #ffffff12,0 18px 60px #00000020;backdrop-filter:blur(30px) saturate(140%);border-radius:24px}.camera{position:relative;overflow:hidden;min-height:540px;height:min(70vh,850px);background:linear-gradient(145deg,#17203699,#080d18bb);isolation:isolate}video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1);z-index:1}.camera:after{content:'';position:absolute;inset:40% 0 0;background:linear-gradient(transparent,#050810c9);z-index:2;pointer-events:none}.camera-top{position:absolute;top:22px;left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;z-index:4}.camera-top .pill{background:#0e16285c}.camera-label{font-size:11px;color:#c1cce0;letter-spacing:.05em}.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;z-index:0;padding:30px}.lens{width:72px;height:72px;border:1px solid #b7ccff24;border-radius:24px;display:grid;place-items:center;background:linear-gradient(140deg,#b9cfff0c,#ffffff02);margin-bottom:20px;box-shadow:0 0 100px #739aff14}.lens svg{width:28px;fill:none;stroke:#a6b9dd;stroke-width:1.3}.empty h2{font-size:22px;font-weight:450;letter-spacing:-.5px;margin:0 0 8px}.empty p{color:var(--muted);font-size:13px;max-width:280px;margin:0}.camera-bottom{position:absolute;bottom:22px;left:22px;right:22px;z-index:4;display:flex;align-items:center;flex-direction:column;gap:22px}.caption{text-align:center;max-width:88%;font-size:clamp(20px,2.4vw,34px);font-weight:500;letter-spacing:-.5px;text-shadow:0 2px 20px #000;line-height:1.35;margin:0;overflow-wrap:anywhere;white-space:pre-wrap}.caption:empty{display:none}.caption-meta{text-align:center;color:#bcc7dc;font-size:10px;text-transform:uppercase;letter-spacing:.16em;margin:0 0 8px}.controls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;border-radius:22px;padding:8px;background:linear-gradient(145deg,#ffffff20,#ffffff0a);border:1px solid #ffffff24;backdrop-filter:blur(30px) saturate(160%);box-shadow:inset 0 1px 0 #ffffff30,0 12px 30px #0005}.controls button{border:1px solid transparent;background:#ffffff09;padding:12px 16px;border-radius:14px;font-size:12px;white-space:nowrap}.controls .primary{background:#e8edff;color:#172039;box-shadow:inset 0 1px 0 white,0 2px 10px #b9caff26;font-weight:600}.controls .primary:not(:disabled):hover{background:#fff}.stop-icon{display:inline-block;width:8px;height:8px;border-radius:2px;background:currentColor;margin-right:7px}.record-icon{display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:7px}.sidebar{padding:25px 23px;display:flex;flex-direction:column;min-width:0}.panel-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.panel-heading h2{font-size:17px;letter-spacing:-.4px;font-weight:500;margin:0}.tag{color:#abb9d7;font-size:9px;border:1px solid var(--line);border-radius:5px;padding:3px 6px;text-transform:uppercase;letter-spacing:.08em}.transcript-label{font-size:11px;color:var(--muted);display:block;margin-bottom:10px}textarea{width:100%;resize:vertical;flex:1;min-height:240px;border:0;border-radius:10px;padding:0 6px 16px 0;background:transparent;color:#e5eaff;font-size:17px;line-height:1.8;letter-spacing:-.2px}textarea::placeholder{color:#687791;font-size:15px}textarea:focus{outline-offset:4px}.panel-bottom{border-top:1px solid var(--line);padding-top:18px;margin-top:16px}.panel-bottom p{font-size:11px;color:var(--muted);margin:12px 0 0}.copy{border:1px solid #ffffff20;border-radius:12px;padding:11px 16px;width:100%;background:#ffffff09;font-size:12px}.settings{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 5px;flex-wrap:wrap}.settings-group{display:flex;align-items:center;gap:20px;color:var(--muted);font-size:12px}.settings label{display:flex;align-items:center;gap:9px}select{border:1px solid var(--line);border-radius:9px;background:#182137;padding:7px 25px 7px 10px;font-size:12px}input{accent-color:#b9cbff}.hint{font-size:11px;color:#8795b1}.connection{padding:17px 20px;display:flex;align-items:center;gap:18px;border-radius:16px}.status{flex:1;font-size:12px;color:#c4cfe3;overflow-wrap:anywhere}.subtle{background:transparent;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:11px;white-space:nowrap}#queueStatus{font-size:10px;color:var(--muted);margin:3px 0 0}.diagnostics{margin-top:20px;color:#8c9ab5;font-size:11px}.diagnostics summary{cursor:pointer;width:fit-content}#endpoint{overflow-wrap:anywhere}#history{padding-left:18px}#history li{padding:9px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.footer{display:flex;justify-content:space-between;color:#64728e;font-size:10px;margin-top:20px;gap:24px}.footer p{margin:0;max-width:750px}.camera[data-recording="true"] .dot{background:#ff9b9b;box-shadow:0 0 14px #ff9b9b88}.camera[data-camera="true"] .empty{display:none}
+@media(min-width:1600px){.workspace{grid-template-columns:minmax(0,1fr) 370px}}@media(max-width:1000px){.shell{padding:24px}.workspace{grid-template-columns:minmax(0,1fr) 285px}.intro p{display:none}.camera{min-height:490px}.controls button{padding:11px 12px}.camera-bottom{left:12px;right:12px}.sidebar{padding:22px 18px}}@media(max-width:760px){.shell{padding:20px 16px}.topbar{margin-bottom:28px}.topnote>span:first-child{display:none}.workspace{grid-template-columns:1fr}.camera{height:65vh;min-height:440px}.sidebar{min-height:340px}.intro{margin-bottom:20px}h1{font-size:30px}.settings-group{gap:14px;flex-wrap:wrap}.hint{display:none}.connection{align-items:start;padding:15px}.footer{flex-direction:column;gap:8px}textarea{min-height:180px}.camera-top{left:18px;right:18px}.controls{gap:4px;padding:6px}.controls button{padding:12px 11px;font-size:11px}.caption{max-width:95%;font-size:23px}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* Minimal studio with the original Componentry WebGL prism behind refractive panels. */
+body{background:radial-gradient(ellipse at 20% 30%,#357fe4,#071126 65%);min-height:100dvh}
+#prism{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+body:after{content:'';position:fixed;inset:0;background:#03091630;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;padding:22px 30px;max-width:2000px}.topbar{height:44px;margin-bottom:20px}.brand{margin:0;font-size:24px}.tagline{color:#e6efff;font-size:13px;text-shadow:0 2px 12px #0008}
+.workspace{grid-template-columns:minmax(0,1fr) 290px;height:calc(100dvh - 174px);min-height:480px;gap:18px}
+.glass{background:linear-gradient(125deg,#ffffff30,#c4ddff0a 40%,#ffffff18);border:1px solid #ffffff60;backdrop-filter:blur(22px) saturate(180%);box-shadow:inset 0 1px 1px #ffffff80,inset 0 -1px 1px #ffffff25,0 15px 50px #0003;border-radius:26px}
+.camera{height:100%;min-height:0;background:#050a1470}.camera-top .pill{border:1px solid #ffffff55;background:#09132660}.camera-label{display:none}.empty p{color:#d1ddf1}.empty .subtle{margin-top:18px}.empty{gap:0}.camera-bottom{bottom:24px;gap:26px}.caption{max-width:800px}.camera-top .dot{background:#bdc9de}.camera[data-recording="true"] .dot{background:#ff9b9b}
+.controls{border-radius:24px;background:linear-gradient(120deg,#ffffff65,#ffffff1a 38%,#ffffff40);border:1px solid #ffffff80;backdrop-filter:blur(20px) saturate(180%);box-shadow:inset 0 2px 1px #ffffff99,inset 0 -1px 1px #ffffff40,0 8px 25px #0005,0 0 0 4px #ffffff08;padding:7px;gap:8px}
+.controls button{border:1px solid #ffffff28;border-radius:17px;background:#ffffff13;padding:13px 26px;font-size:13px;box-shadow:inset 0 1px 0 #ffffff40}.controls .primary{background:#f3f6ff;box-shadow:0 3px 15px #c9dfff55,inset 0 1px 1px #fff}.controls button:not(:disabled):hover{background:#ffffff50}.controls .primary:not(:disabled):hover{background:white}
+.sidebar{padding:22px;background:linear-gradient(125deg,#ffffff3a,#acc9ff15 50%,#ffffff25)}.panel-heading{margin-bottom:20px}.panel-heading h2{font-size:15px}.copy{width:35px;height:35px;display:grid;place-items:center;padding:8px;border-radius:12px;background:#ffffff18;border:1px solid #ffffff55;box-shadow:inset 0 1px 0 #ffffff55}.copy svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}textarea{resize:none;padding:0;color:#fff;min-height:160px;text-shadow:0 1px 8px #0006}textarea::placeholder{color:#dce9ffb0}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:14px;color:#eff5ff;text-shadow:0 1px 8px #0008}.toolbar .status{flex:0 1 auto;font-size:11px;text-align:right;max-width:60%}.settings-group{font-size:11px;gap:18px;color:#eff5ff}.settings-group label{display:flex;align-items:center;gap:7px}select{background:#12223a9c;border-color:#ffffff55;padding:7px 10px;font-size:11px}input{accent-color:#d4e7ff}.diagnostics{margin-top:14px;color:#eef4ff}.diagnostics summary{opacity:.8}.detail-body{padding:16px;margin-top:12px;border-radius:16px}.detail-body p{margin:0 0 10px}
+@media(max-width:900px){.shell{padding:20px}.workspace{grid-template-columns:minmax(0,1fr) 250px}.sidebar{padding:18px}.toolbar .status{max-width:50%}}
+@media(max-width:680px){.shell{padding:14px}.topbar{margin-bottom:14px}.tagline{font-size:11px;max-width:145px;text-align:right}.workspace{height:auto;min-height:0;grid-template-columns:1fr}.camera{height:68dvh;min-height:400px}.sidebar{min-height:0;height:300px}.toolbar{align-items:start;flex-direction:column;gap:10px}.toolbar .status{text-align:left;max-width:100%}.controls button{padding:12px 22px}.brand{font-size:21px}}
+.command-panel{margin-top:18px;border-top:1px solid #ffffff40;padding-top:14px}.command-panel textarea{min-height:90px;height:100px;font-size:14px;resize:vertical}.command-panel button{margin:5px 3px 0 0}.sidebar{overflow:auto}#commandStatus{font-size:12px}
+.handoff{padding:22px;margin-top:20px}.handoff .panel-heading{margin-bottom:10px;gap:15px;flex-wrap:wrap}.handoff-hint{font-size:12px;color:#d5e0f5}.handoff-fields{display:grid;grid-template-columns:1fr 2fr 1.5fr;gap:14px}.handoff label{display:flex;flex-direction:column;gap:7px;font-size:12px}.handoff input:not([type=checkbox]),.handoff select,.handoff textarea{width:100%;box-sizing:border-box;background:#10203b99;border:1px solid #ffffff55;border-radius:10px;padding:10px;color:#fff}.handoff-message{margin-top:14px}.handoff textarea{min-height:85px;resize:vertical;font-size:15px}.handoff-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:14px}.handoff-actions label{flex-direction:row;align-items:center}#commandQueue{padding-left:22px;font-size:13px}#commandQueue li{padding:10px 0;border-top:1px solid #ffffff22;overflow-wrap:anywhere}#commandQueue button{margin-left:12px}#queueError{font-size:12px;color:#ffd1c9}@media(max-width:680px){.handoff-fields{grid-template-columns:1fr}.handoff{padding:16px}}
+</style></head><body>
+<canvas id="prism" aria-hidden="true"></canvas>
+<main class="shell">
+<header class="topbar"><h1 class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>SilentOS</h1><span class="tagline">We’re listening with our eyes.</span></header>
+<div class="workspace">
+<section class="camera glass" id="camera" aria-label="Camera studio">
+<video id="preview" autoplay muted playsinline aria-label="Mirrored camera preview"></video>
+<div class="camera-top"><span class="pill"><span class="dot"></span><span id="captureState">Camera offline</span></span></div>
+<div class="empty"><div class="lens"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg></div><p id="cameraMessage">Opening camera…</p><button id="enable" class="subtle" hidden>Retry camera</button></div>
+<div class="camera-bottom"><div id="captionWrap" hidden><p class="caption" id="caption" role="status" aria-live="polite"></p></div>
+<div class="controls" role="group" aria-label="Recording controls"><button id="start" class="primary" disabled><span class="record-icon" aria-hidden="true"></span>Start</button><button id="finish" disabled>Finish phrase</button></div></div>
+</section>
+<aside class="sidebar glass" aria-label="Full transcript"><div class="panel-heading"><h2>Transcript</h2><button class="copy" id="copy" aria-label="Copy transcript" title="Copy transcript"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></svg></button></div><textarea id="transcript" aria-label="Editable transcript" placeholder="…" spellcheck="true"></textarea><button id="useTranscript" class="subtle" disabled>Use transcript / selection as task</button><section class="command-panel" aria-label="Command assembly"><h2 style="font-size:15px">Current command</h2><textarea id="commandText" aria-label="Assembled command" placeholder="Record one instruction across multiple clips."></textarea><p id="commandStatus" role="status" aria-live="polite"></p><button id="finishCommand" class="subtle">Finish command</button><button id="newCommand" class="subtle">New command</button><p style="font-size:11px">Finish phrase pauses capture. Finish command waits for all clips. Nothing is sent.</p></section></aside>
+</div>
+
+<div class="toolbar"><div class="settings-group"><label><select id="duration" aria-label="Clip length"><option value="3000">3 sec</option><option value="5000">5 sec</option><option value="6000">6 sec</option><option value="8000" selected>8 sec</option><option value="15000">15 sec</option><option value="30000">30 sec</option><option value="60000">60 sec</option></select></label><label><input id="repeat" type="checkbox" checked> Continuous</label></div><div id="status" class="status" role="status" aria-live="polite">Connecting…</div></div>
+<details class="diagnostics"><summary>Details</summary><div class="detail-body glass"><p>Video only · Audio off · Clips processed by hosted FLARE.</p><p>Record up to 60 seconds per clip. Captions arrive after each clip is processed. Continuous starts another clip automatically.</p><p id="queueStatus"></p><p id="endpoint"></p><button class="subtle" id="recheck">Reconnect</button><button class="subtle" id="stop">Pause</button><ol id="history"></ol></div></details>
+<section class="command-panel glass" style="padding:20px;margin-top:20px"><h2>Two-device conversation</h2><p>Create a room, enter this computer’s LAN IP, and share the listener link on a trusted network. Only text you explicitly send is shared.</p><button class="subtle" id="createRoom" disabled>Create room</button> <label>Host LAN IP <input id="roomHost" placeholder="e.g. 192.168.1.25" style="padding:8px;border-radius:8px"></label> <button class="subtle" id="copyRoom" disabled>Copy listener link</button><p id="roomLink" style="overflow-wrap:anywhere"></p><p id="roomStatus" role="status">Checking room availability…</p><p id="roomReceipt" role="status"></p><button class="subtle" id="sendRoom" disabled>Send reviewed command to listener</button><p>Listener hears browser-generated speech after enabling voice. This demo sends captions and speech, not live video or microphone audio.</p></section>
+<section class="handoff glass" aria-label="Task handoff">
+<div class="panel-heading"><h2>Task handoff</h2><button id="copyConnector" class="subtle">Copy HeyClicky connector command</button></div>
+<p id="handoffStatus" role="status" aria-live="polite">Finish a command to extract its message.</p>
+<p class="handoff-hint">General tasks go to HeyClicky as text. Messages go to Photon 2.0.</p><p id="photonStatus" role="status"></p>
+<label>Task type<select id="taskKind"><option value="auto">Detect task type</option><option value="task">General task → HeyClicky</option><option value="message">Message → Photon</option></select></label>
+<div id="taskFields" hidden><label>Task text<textarea id="taskText" maxlength="8000" placeholder="Open Downloads and find my latest presentation."></textarea></label><label>Action<select id="taskMode"><option value="execute">Execute with HeyClicky</option><option value="review">Review plan only</option></select></label><button id="copyTaskStarter" class="subtle">Copy HeyClicky task starter</button></div><div id="messageFields">
+<div class="handoff-fields"><label>App<select id="messageApp"><option value="imessage">iMessage</option><option value="whatsapp">WhatsApp</option><option value="sms">SMS</option></select></label><label>Recipient<input id="messageRecipient" autocomplete="off" maxlength="160" placeholder="Exact name or phone number"></label><label>Action<select id="messageMode"><option value="draft">Prepare draft only</option><option value="send">Send once through Photon</option></select></label></div>
+<label class="handoff-message">Exact message<textarea id="messageBody" maxlength="5000" placeholder="Review the words to send."></textarea></label></div>
+<div class="handoff-actions"><button id="queueCommand" class="subtle" disabled>Queue for HeyClicky</button><label><input id="autoQueue" type="checkbox"> Queue finished tasks automatically</label><button id="refreshCommands" class="subtle">Refresh queue</button></div>
+<p class="handoff-hint">HeyClicky pulls general task text from the SilentOS API through its connector; an active agent job is required. Photon messages use configured sender and contact destinations. Preview mode never sends.</p>
+<p id="queueError" role="status" aria-live="polite"></p><ol id="commandQueue" aria-label="Recent message commands"></ol>
+</section>
+</main>
+<script src="/command.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let command=new CommandAssembly(),finishRequested=false;
+const queue=[]; const MAX_WAITING=2;
+let stream,recorder,timer,active=false,busy=false,ready=false,checking=false,opening=false,recording=false,stopping=false;
+let note='Checking model…',captureStart=0,captureLimit=0,discard=false;
+function render(){
+ if(finishRequested&&!recording&&!stopping&&!busy&&!queue.length){command.finish();finishRequested=false;}
+ const locked=recording||stopping||busy||queue.length>0||active||finishRequested;
+ $('commandText').readOnly=locked||Boolean(command.handoffLocked)||Boolean(command.roomHandoffLocked)||command.state==='cancelled';
+ if(locked||command.state==='empty')$('commandText').value=command.text;
+ $('commandStatus').textContent=finishRequested?'Waiting for transcripts…':({draft:'Draft — add clips or finish command.',waiting:'Waiting for transcripts…',ready:'Ready for review — not sent.',empty:'No command recorded.',incomplete:'Incomplete — '+command.error+'. Start a new command and repeat the instruction.',cancelled:'Cancelled.'})[command.state];
+ $('finishCommand').disabled=finishRequested||command.sealed||Boolean(command.error)||(!locked&&!command.text);
+ $('newCommand').disabled=locked;
+ $('useTranscript').disabled=locked||!$('transcript').value.trim();
+
+ $('camera').dataset.camera=String(Boolean(stream));
+ $('camera').dataset.recording=String(recording);
+ $('captureState').textContent=opening?'Opening camera…':recording?'Recording':active&&queue.length>=MAX_WAITING?'Catching up':busy?'Processing phrase':stream?'Camera ready':'Camera offline';
+ $('enable').disabled=opening||active||recording||busy||queue.length>0;
+ $('enable').hidden=Boolean(stream)||opening;
+ $('start').disabled=finishRequested||command.sealed||Boolean(command.error)||!stream||active||recording||checking||opening||stopping||queue.length>=MAX_WAITING;
+ $('finish').disabled=!recording||stopping;
+ $('stop').disabled=!active&&!recording;
+ $('recheck').disabled=checking||busy||active||recording||queue.length>0;
+ $('queueStatus').textContent=`${busy?'Processing 1 clip':'No request running'} · ${queue.length}/${MAX_WAITING} waiting`;
+ window.renderCommandHandoff?.(command);
+ window.renderRoomHandoff?.(command);
+ $('status').textContent=recording?`Recording — ${Math.max(0,(captureLimit-(performance.now()-captureStart))/1000).toFixed(1)}s remaining`:active&&queue.length>=MAX_WAITING?'Catching up — capture paused. Wait before mouthing the next phrase.':note;
+}
+async function api(path,options={}){const r=await fetch(path,{...options,signal:AbortSignal.timeout(125000)});let data;try{data=await r.json();}catch{throw new Error(`Backend returned HTTP ${r.status} without JSON. Check the server terminal.`);}if(!r.ok)throw new Error(data.error||`HTTP ${r.status}`);return data;}
+async function check(){checking=true;render();try{const r=await api('/api/ready');ready=r.model_loaded===true;note=ready?'Ready':'Model unavailable.';}catch(e){ready=false;note=e.message;}finally{checking=false;render();}}
+function endCapture(){if(recorder?.state==='recording'){clearInterval(timer);stopping=true;recorder.stop();render();}}
+function fail(message){
+ command.fail(message);finishRequested=false;active=false;ready=false;const lost=queue.length+(recording?1:0);queue.length=0;discard=true;endCapture();
+ note=`${message} No retry sent. ${lost} unsent clip(s) discarded; repeat those phrases. Check connection before restarting.`;render();
+}
+function maybeCapture(){if(active&&stream&&!recording&&!stopping&&queue.length<MAX_WAITING)capture();else render();}
+async function drain(){
+ if(busy||!queue.length)return;
+ const clip=queue.shift();busy=true;const sent=performance.now();render();maybeCapture();
+ try{
+ const r=await api('/api/transcribe',{method:'POST',headers:{'Content-Type':clip.blob.type},body:clip.blob});
+ if(typeof r.text!=='string'||!r.text.trim()||r.audio_used!==false)throw new Error('Invalid visual-only transcript');
+ command.accept(r.text);$('commandText').value=command.text;
+ const now=performance.now();$('transcript').value+=($('transcript').value?'\n':'')+r.text;
+ $('caption').textContent=r.text.trim();$('captionWrap').hidden=false;
+ const li=document.createElement('li');const seconds=ms=>(ms/1000).toFixed(2)+'s';
+ li.textContent=`${r.text} | capture ${seconds(clip.stopped-clip.began)} · queue ${seconds(sent-clip.stopped)} · request ${seconds(now-sent)} · start-to-text ${seconds(now-clip.began)} | server preprocess ${r.preprocess_ms}ms · inference ${r.inference_ms}ms · total ${r.total_ms}ms | local receive ${r.receive_ms??'?'}ms · proxy ${r.proxy_ms}ms`;
+ $('history').prepend(li);note=r.heyclicky_submitted?'Transcript submitted to HeyClicky as typed input.':'Transcript received. Review before use.';
+ }catch(e){fail(e.message);}finally{busy=false;render();drain();maybeCapture();}
+}
+function capture(){
+ // Prefer MP4 on current Chromium/macOS. Chrome WebM recordings can advertise a
+ // 1000 FPS time base even when the camera is running at 30 FPS, which FLARE
+ // correctly rejects as outside its supported 10–60 FPS input range.
+ const mime=['video/mp4','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+ if(!mime){active=false;note='No supported recording format. Try Chrome.';render();return;}
+ const chunks=[];discard=false;captureStart=performance.now();captureLimit=Math.min(60000,Number($('duration').value));const began=captureStart;
+ try{recorder=new MediaRecorder(stream,{mimeType:mime});}catch(e){fail(e.message);return;}
+ recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+ recorder.onerror=()=>fail('Camera recording failed.');
+ recorder.onstop=()=>{
+ clearInterval(timer);recording=false;stopping=false;const stopped=performance.now();
+ if(discard){render();return;}
+ const blob=new Blob(chunks,{type:mime});
+ if(stopped-began>60000||!blob.size){fail('Clip was empty or exceeded 60 seconds. Keep this tab visible.');return;}
+ if(stopped-began<500){note='Clip shorter than 0.5 seconds skipped. Record a complete phrase.';active=false;render();return;}
+ command.enqueue();queue.push({blob,began,stopped});
+ if(!$('repeat').checked)active=false;
+ note=active?'Processing…':'Paused';
+ drain();maybeCapture();render();
+ };
+ try{recorder.start();recording=true;}catch(e){fail(e.message);return;}
+ // Leave 150ms for recorder shutdown at the API's hard sixty-second limit.
+ timer=setInterval(()=>{render();if(performance.now()-began>=Math.min(captureLimit,59850))endCapture();},50);render();
+}
+async function openCamera(){if(opening||stream)return;opening=true;render();try{
+ if(!navigator.mediaDevices||!window.MediaRecorder)throw new Error('Use a current browser on localhost.');
+ stream?.getTracks().forEach(t=>t.stop());stream=null;$('preview').srcObject=null;
+ stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},frameRate:{min:10,ideal:30,max:30},facingMode:'user'},audio:false});$('preview').srcObject=stream;stream.getVideoTracks().forEach(track=>track.addEventListener('ended',()=>{const interrupted=active||recording||stopping;active=false;discard=true;endCapture();stream=null;$('preview').srcObject=null;if(interrupted)command.fail('Camera disconnected');finishRequested=false;note='Camera disconnected.';$('cameraMessage').textContent=note;render();}));note=ready?'Ready':'Connecting…';
+ }catch(e){note=e.message;$('cameraMessage').textContent='Camera unavailable. Allow camera access, then retry.';}finally{opening=false;render();}}
+$('enable').onclick=openCamera;
+$('start').onclick=async()=>{if($('start').disabled)return;const selected=command;if(!ready){await check();if(!ready)return;}if(command!==selected||$('start').disabled)return;active=true;maybeCapture();};
+function finishPhrase(){active=false;endCapture();note='Paused';render();}
+$('finish').onclick=finishPhrase;
+$('stop').onclick=finishPhrase;
+$('finishCommand').onclick=()=>{if($('finishCommand').disabled)return;finishRequested=true;active=false;endCapture();render();};
+$('newCommand').onclick=()=>{if($('newCommand').disabled)return;command.cancel();command=new CommandAssembly();finishRequested=false;$('commandText').value='';render();};
+$('commandText').oninput=()=>{if(!$('commandText').readOnly){command.parts=[$('commandText').value.trim()];render();}};
+$('transcript').oninput=render;
+$('useTranscript').onclick=()=>{if($('useTranscript').disabled)return;const area=$('transcript');const text=(area.selectionEnd>area.selectionStart?area.value.slice(area.selectionStart,area.selectionEnd):area.value).trim();if(!text)return;command.cancel();command=new CommandAssembly();command.parts=[text];command.finish();finishRequested=false;$('commandText').value=text;render();};
+$('recheck').onclick=check;
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('transcript').value);note='Transcript copied to clipboard.';render();}catch{note='Select and copy the text manually.';render();}};
+window.addEventListener('pagehide',()=>{active=false;discard=true;queue.length=0;clearInterval(timer);stream?.getTracks().forEach(t=>t.stop());});
+api('/api/config').then(c=>{$('endpoint').textContent='FLARE endpoint: '+c.api_url;}).catch(()=>{});
+check();
+openCamera();
+</script>
+<script src="/rooms.js" defer></script>
+<script src="/handoff.js" defer></script>
+<script src="/prism.js" defer></script></body></html>

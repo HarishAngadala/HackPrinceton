@@ -1,0 +1,14 @@
+{
+  "project_id": "pho_prj_REPLACE_WITH_YOUR_PHOTON_2_PROJECT_ID",
+  "api_key": "SET_LOCALLY_OR_USE_PHOTON_API_KEY_ENVIRONMENT_VARIABLE",
+  "contacts": [
+    {
+      "name": "Example Contact",
+      "app": "imessage",
+      "platform": "imessage",
+      "space_id": "pho_spc_REPLACE_WITH_VERIFIED_DIRECT_SPACE_ID",
+      "sender_id": "pho_usr_REPLACE_WITH_AGENT_USER_ID",
+      "recipient_id": "pho_usr_REPLACE_WITH_RECIPIENT_USER_ID"
+    }
+  ]
+}
