@@ -37,7 +37,7 @@ body:after{content:'';position:fixed;inset:0;background:#03091630;pointer-events
 <div class="camera-bottom"><div id="captionWrap" hidden><p class="caption" id="caption" role="status" aria-live="polite"></p></div>
 <div class="controls" role="group" aria-label="Recording controls"><button id="start" class="primary" disabled><span class="record-icon" aria-hidden="true"></span>Start</button><button id="finish" disabled>Finish phrase</button></div></div>
 </section>
-<aside class="sidebar glass" aria-label="Full transcript"><div class="panel-heading"><h2>Transcript</h2><button class="copy" id="copy" aria-label="Copy transcript" title="Copy transcript"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></svg></button></div><textarea id="transcript" aria-label="Editable transcript" placeholder="…" spellcheck="true"></textarea><button id="useTranscript" class="subtle" disabled>Use transcript / selection as task</button><section class="command-panel" aria-label="Command assembly"><h2 style="font-size:15px">Current command</h2><textarea id="commandText" aria-label="Assembled command" placeholder="Record one instruction across multiple clips."></textarea><p id="commandStatus" role="status" aria-live="polite"></p><button id="finishCommand" class="subtle">Finish command</button><button id="newCommand" class="subtle">New command</button><p style="font-size:11px">Finish phrase pauses capture. Finish command waits for all clips. Nothing is sent.</p></section></aside>
+<aside class="sidebar glass" aria-label="Full transcript"><div class="panel-heading"><h2>Transcript</h2><button class="copy" id="copy" aria-label="Copy transcript" title="Copy transcript"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></svg></button></div><textarea id="transcript" aria-label="Editable transcript" placeholder="…" spellcheck="true"></textarea><button id="useTranscript" class="subtle" disabled>Use transcript / selection as task</button><section class="command-panel" aria-label="Command assembly"><h2 style="font-size:15px">Current command</h2><textarea id="commandText" aria-label="Assembled command" placeholder="Record one instruction across multiple clips."></textarea><p id="commandStatus" role="status" aria-live="polite"></p><button id="finishCommand" class="subtle">Finish command</button><button id="newCommand" class="subtle">New command</button><p style="font-size:11px">Hold Control+Option to record. Release to transcribe and submit to HeyClicky automatically.</p></section></aside>
 </div>
 
 <div class="toolbar"><div class="settings-group"><label><select id="duration" aria-label="Clip length"><option value="3000">3 sec</option><option value="5000">5 sec</option><option value="6000">6 sec</option><option value="8000" selected>8 sec</option><option value="15000">15 sec</option><option value="30000">30 sec</option><option value="60000">60 sec</option></select></label><label><input id="repeat" type="checkbox" checked> Continuous</label></div><div id="status" class="status" role="status" aria-live="polite">Connecting…</div></div>
@@ -62,7 +62,7 @@ const $=id=>document.getElementById(id);
 let command=new CommandAssembly(),finishRequested=false;
 const queue=[]; const MAX_WAITING=2;
 let stream,recorder,timer,active=false,busy=false,ready=false,checking=false,opening=false,recording=false,stopping=false;
-let note='Checking model…',captureStart=0,captureLimit=0,discard=false;
+let note='Checking model…',captureStart=0,captureLimit=0,discard=false,shortcutRecording=false;
 function render(){
  if(finishRequested&&!recording&&!stopping&&!busy&&!queue.length){command.finish();finishRequested=false;}
  const locked=recording||stopping||busy||queue.length>0||active||finishRequested;
@@ -144,6 +144,20 @@ $('start').onclick=async()=>{if($('start').disabled)return;const selected=comman
 function finishPhrase(){active=false;endCapture();note='Paused';render();}
 $('finish').onclick=finishPhrase;
 $('stop').onclick=finishPhrase;
+window.addEventListener('keydown',async e=>{
+ if(e.repeat||shortcutRecording||!e.ctrlKey||!e.altKey)return;
+ e.preventDefault();shortcutRecording=true;
+ if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))document.activeElement.blur();
+ // A held shortcut should determine the recording length, not the duration menu.
+ // Sixty-second chunks roll continuously if the keys remain held.
+ $('duration').value='60000';
+ await $('start').onclick();
+});
+window.addEventListener('keyup',e=>{
+ if(!shortcutRecording||(e.ctrlKey&&e.altKey))return;
+ e.preventDefault();shortcutRecording=false;finishPhrase();
+});
+window.addEventListener('blur',()=>{if(shortcutRecording){shortcutRecording=false;finishPhrase();}});
 $('finishCommand').onclick=()=>{if($('finishCommand').disabled)return;finishRequested=true;active=false;endCapture();render();};
 $('newCommand').onclick=()=>{if($('newCommand').disabled)return;command.cancel();command=new CommandAssembly();finishRequested=false;$('commandText').value='';render();};
 $('commandText').oninput=()=>{if(!$('commandText').readOnly){command.parts=[$('commandText').value.trim()];render();}};
