@@ -55,9 +55,11 @@ class RoutingTests(HTTPTestCase):
     def test_workers_claim_separate_providers(self):
         self.post('/api/tasks',{'text':'Open Downloads','request_key':'one'})
         self.post('/api/commands',{'app':'sms','recipient':'Test','message':'hello','mode':'draft','transcript':'hello','request_key':'two'})
-        store=server.command_store();task=store.claim('heyclicky');msg=store.claim('photon')
+        self.post('/api/commands',{'kind':'task','provider':'deepagent','task':'Plan this','mode':'review','transcript':'Plan this','request_key':'three'})
+        store=server.command_store();task=store.claim('heyclicky');msg=store.claim('photon');deep=store.claim('deepagent')
         self.assertEqual(task['kind'],'task');self.assertEqual(msg['kind'],'message')
-        self.assertIsNone(store.claim('heyclicky'));self.assertIsNone(store.claim('photon'))
+        self.assertEqual(deep['provider'],'deepagent')
+        self.assertIsNone(store.claim('heyclicky'));self.assertIsNone(store.claim('photon'));self.assertIsNone(store.claim('deepagent'))
         with self.assertRaises(ValueError):store.report(task['id'],task['claim_token'],'accepted','wrong task outcome')
 
     def test_legacy_database_is_migrated_but_not_dispatched(self):
@@ -72,6 +74,14 @@ class RoutingTests(HTTPTestCase):
 class PhotonTests(HTTPTestCase):
     def message(self,mode='send'):
         return server.command_store().enqueue({'app':'imessage','recipient':'Test','message':'hello','mode':mode,'transcript':'hello','request_key':'test'})
+
+    def test_credentials_accept_current_dashboard_key_formats_without_accepting_placeholders(self):
+        path=Path(self.folder.name)/'photon.json'
+        path.write_text(json.dumps({'project_id':ident('prj'),'api_key':'SET_LOCALLY_OR_USE_PHOTON_API_KEY_ENVIRONMENT_VARIABLE'}))
+        with patch.dict('os.environ',{'PHOTON_CONFIG_FILE':str(path),'PHOTON_API_KEY':'key_current_dashboard_token'}):
+            self.assertEqual(photon.credentials()[1],'key_current_dashboard_token')
+        with patch.dict('os.environ',{'PHOTON_CONFIG_FILE':str(path)},clear=True):
+            with self.assertRaises(photon.PhotonConfigError):photon.credentials()
 
     def test_preview_never_contacts_photon_and_missing_setup_blocks_send(self):
         self.message('draft')

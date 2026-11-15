@@ -14,6 +14,7 @@ import flare
 import server
 import room
 from commands import CommandStore
+from companion_store import CompanionStore
 
 
 class HTTPTestCase(unittest.TestCase):
@@ -33,12 +34,15 @@ class HTTPTestCase(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.saved_store = server.STORE
+        self.saved_companion_store = server.COMPANION_STORE
         self.saved_heyclicky = server.HEYCLICKY_EXECUTABLE
         server.STORE = CommandStore(Path(self.folder.name) / 'commands.sqlite3')
+        server.COMPANION_STORE = CompanionStore(Path(self.folder.name) / 'companion.sqlite3')
         server.HEYCLICKY_EXECUTABLE = None
 
     def tearDown(self):
         server.STORE = self.saved_store
+        server.COMPANION_STORE = self.saved_companion_store
         server.HEYCLICKY_EXECUTABLE = self.saved_heyclicky
         self.folder.cleanup()
 
@@ -58,6 +62,7 @@ class BackendTests(HTTPTestCase):
         self.assertEqual(code, 200)
         self.assertIn(b'Finish phrase', body)
         self.assertEqual(json.loads(self.call('/api/config')[1])['api_url'], server.BASE_URL)
+        self.assertIn('companion',json.loads(self.call('/api/config')[1]))
 
     def test_command_api_auth_parse_queue_cancel(self):
         self.assertEqual(self.call('/api/commands')[0], 403)
@@ -85,6 +90,28 @@ class BackendTests(HTTPTestCase):
             code, body = self.call('/api/ready')
         self.assertEqual(code, 503)
         self.assertIn(b'Tunnel unavailable', body)
+
+    def test_deepagent_provider_and_companion_approval_are_isolated(self):
+        token=json.loads(self.call('/api/config')[1])['session_token']
+        headers={'X-SilentOS-Token':token,'Content-Type':'application/json'}
+        task={'kind':'task','provider':'deepagent','task':'Summarize this','mode':'review',
+              'transcript':'Summarize this','request_key':'deep'}
+        code,body=self.call('/api/commands',json.dumps(task).encode(),headers)
+        self.assertEqual(code,200);queued=json.loads(body)
+        code,body=self.call('/api/companion/next',b'{}',headers)
+        self.assertEqual(code,200);claimed=json.loads(body)['command']
+        self.assertEqual(claimed['id'],queued['id']);self.assertEqual(claimed['provider'],'deepagent')
+        result={'id':claimed['id'],'claim_token':claimed['claim_token'],'outcome':'reviewed','detail':'Plan ready'}
+        self.assertEqual(self.call('/api/companion/result',json.dumps(result).encode(),headers)[0],200)
+        self.assertIsNone(server.command_store().claim('heyclicky'))
+
+        store=server.companion_store();store.ingest({'id':'incoming','space_id':'space','sender_id':'sender','agent_id':'agent',
+            'sender_handle':'+15555550123','platform':'imessage','text':'hello','created_at':'2026-11-14T23:00:00Z'})
+        item=store.claim_for_draft();store.save_draft(item['id'],item['claim_token'],'Hello back')
+        inbox=self.call('/api/companion/messages',headers=headers)
+        self.assertEqual(inbox[0],200);self.assertIn('worker',json.loads(inbox[1]))
+        approved=self.call('/api/companion/approve',json.dumps({'id':'incoming','reply':'Edited reply'}).encode(),headers)
+        self.assertEqual(approved[0],200);self.assertEqual(json.loads(approved[1])['status'],'approved')
 
     def test_upload_cleanup_and_timings(self):
         paths = []

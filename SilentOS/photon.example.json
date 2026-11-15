@@ -1,6 +1,15 @@
 {
   "project_id": "pho_prj_REPLACE_WITH_YOUR_PHOTON_2_PROJECT_ID",
   "api_key": "SET_LOCALLY_OR_USE_PHOTON_API_KEY_ENVIRONMENT_VARIABLE",
+  "companion": {
+    "enabled": false,
+    "platform": "imessage",
+    "agent_id": "pho_usr_REPLACE_WITH_AGENT_USER_ID",
+    "agent_handle": "+15555550188",
+    "allowed_senders": [
+      "+15555550123"
+    ]
+  },
   "contacts": [
     {
       "name": "Example Contact",

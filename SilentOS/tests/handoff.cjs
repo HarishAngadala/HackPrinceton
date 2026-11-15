@@ -3,10 +3,12 @@ const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/st
 const Assembly=require('../static/command.js');
 const elements={};const el=id=>elements[id]??={value:'',disabled:false,checked:false,textContent:'',children:[],append(x){this.children.push(x)},replaceChildren(){this.replacements=(this.replacements||0)+1;this.children=[]}};
 el('messageMode').value='draft';
+el('taskProvider').value='heyclicky';
 let timer,parseRequests=[],queuePayloads=[],failQueue=false,holdQueue=false,heldQueue;
 const first=new Assembly();first.enqueue();first.accept('Send Alex on WhatsApp saying hello');first.finish();
 const context={command:first,crypto:require('node:crypto'),AbortSignal,window:{},document:{getElementById:el,hidden:false,createElement:()=>({append(){}})},navigator:{clipboard:{writeText:async()=>{}}},setTimeout:fn=>(timer=fn,1),clearTimeout:()=>{timer=null},setInterval(){},fetch:async(path,options)=>{
- if(path==='/api/config')return{ok:true,json:async()=>({session_token:'test',connector_command:'python3 test.py'})};
+ if(path==='/api/config')return{ok:true,json:async()=>({session_token:'test',connector_command:'python3 test.py',photon:{configured:false},companion:{configured:false}})};
+ if(path==='/api/companion/messages')return{ok:true,json:async()=>({messages:[],worker:{worker_active:false,worker_photon_enabled:false}})};
  if(path==='/api/tasks/parse')return new Promise(resolve=>parseRequests.push(resolve));
  if(path==='/api/commands'&&options.method==='POST'){
   queuePayloads.push(JSON.parse(options.body));if(holdQueue)return new Promise(resolve=>heldQueue=resolve);if(failQueue)throw new Error('lost response');
@@ -46,5 +48,9 @@ const parsed=()=>({ok:true,json:async()=>({parsed:true,kind:'message',provider:'
  const general=new Assembly();general.parts=['Open Downloads'];general.finish();context.window.renderCommandHandoff(general);timer();await flush();parseRequests[5]({ok:true,json:async()=>({parsed:true,kind:'task',provider:'heyclicky',task:'Open Downloads',reason:'General task'})});await flush();
  assert.equal(el('taskFields').hidden,false);assert.equal(el('messageFields').hidden,true);assert.equal(el('taskText').value,'Open Downloads');
  holdQueue=false;await el('queueCommand').onclick();assert.equal(queuePayloads.at(-1).kind,'task');assert.equal(queuePayloads.at(-1).task,'Open Downloads');
- console.log('PASS: review fields, lost-response idempotency, frozen payload, stale parse rejection, opt-in auto queue');
+ assert.equal(queuePayloads.at(-1).provider,'heyclicky','HeyClicky remains the default task provider');
+ const deep=new Assembly();deep.parts=['Summarize the recent queue'];deep.finish();context.window.renderCommandHandoff(deep);timer();await flush();parseRequests[6]({ok:true,json:async()=>({parsed:true,kind:'task',provider:'heyclicky',task:'Summarize the recent queue',reason:'General task'})});await flush();
+ assert.equal(el('taskProvider').value,'heyclicky','each new command starts on the existing provider');
+ el('taskProvider').value='deepagent';el('taskProvider').oninput();await el('queueCommand').onclick();assert.equal(queuePayloads.at(-1).provider,'deepagent');assert.equal(queuePayloads.at(-1).task,'Summarize the recent queue');
+ console.log('PASS: review fields, lost-response idempotency, frozen payload, stale parse rejection, opt-in auto queue, explicit provider selection');
 })().catch(e=>{console.error(e);process.exitCode=1});

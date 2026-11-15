@@ -2,8 +2,9 @@
 
 SilentOS uses **Photon Beta/2.0**, not Stable Spectrum. The API origin is
 `https://api.photon.codes/v1`, with a `pho_prj_...` project and a Bearer API key.
-No Photon account or sender was available during implementation. Tests simulate
-Photon; **no real Photon message has been sent or delivered by this integration**.
+The integration has been authenticated against a Photon project and verified to
+read its assigned iMessage conversation. Automated tests simulate sends; **no real
+outbound Photon message has been sent or delivered by this integration yet**.
 
 ## Local configuration
 
@@ -36,7 +37,7 @@ It never silently changes channels or creates a guessed recipient conversation.
 The sender is the Photon identity you configure, not necessarily your personal
 Messages or WhatsApp account.
 
-## Recording or typing a message
+## Recording or typing an outbound message
 
 For example: `Send Example Contact on iMessage saying I'll be there soon`.
 Finish the command or use **Use transcript / selection as task**, review the fields,
@@ -63,6 +64,21 @@ Shared iMessage lines can send only under their documented assignment/inbound
 conversation rules. SMS requires appropriate sender/recipient platform permissions
 and campaign eligibility where applicable. WhatsApp Personal and Business have
 different setup and capabilities. An API key alone does not establish any of these.
+
+## Optional two-way Deep Agent companion
+
+The same Photon 2.0 project can also provide an approval-gated iMessage companion.
+This is a separate `companion.py` process: it polls allowlisted inbound messages,
+asks Deep Agent for a candidate reply, and stores the draft locally. It cannot send
+until a person approves the draft in SilentOS. The normal outbound Photon worker,
+HeyClicky task queue, and direct FLARE-to-HeyClicky bridge continue independently.
+
+Add the `companion` object shown in `photon.example.json`, then follow
+[COMPANION.md](COMPANION.md). Only iMessage is enabled for this inbound flow. The
+agent and human handles must match the Photon message snapshot exactly, the Space
+must be direct, and the content must be received plain text. This integration uses
+polling rather than a public webhook so the local demo does not need an inbound
+internet-facing endpoint.
 
 ## References
 

@@ -67,7 +67,7 @@ is uploaded and processed; this is not streaming word-by-word transcription. The
 Details panel shows timing and connection information. Assemblies live in browser
 memory and are lost on reload.
 
-## Tasks: HeyClicky and Photon
+## Tasks: HeyClicky, Deep Agent, and Photon
 
 Record and finish a command, or edit/select text in **Transcript** and click
 **Use transcript / selection as task**. SilentOS routes the reviewed input:
@@ -76,9 +76,15 @@ Record and finish a command, or edit/select text in **Transcript** and click
   Examples: open a file, find a presentation, or perform supported browser work.
   Choose execute or plan-only mode. A connected active HeyClicky agent must pull
   the task; the app already supports typed input and needs no microphone conversion.
+- **Optional general tasks → Deep Agent**, when explicitly selected in the task
+  provider field. It runs in a separate Python 3.11+ worker, cannot claim HeyClicky
+  work, and currently has read-only local queue context rather than OS control.
 - **Messages → Photon 2.0**, through a separate local worker. Specify app, recipient,
   and exact message. Draft mode saves a local preview; send mode uses configured
   Photon sender/contact IDs. No personal messaging account is assumed.
+- **Inbound iMessage → Deep Agent draft → Photon reply**, through the optional
+  companion. Only configured senders are accepted, and every generated reply must
+  be reviewed and approved in the local UI before the worker can send it.
 
 Automatic routing uses explicit message phrasing, such as `Send Alex on WhatsApp
 saying I'll be there soon`. Incomplete messaging requests remain for review. The
@@ -88,9 +94,12 @@ a HeyClicky job, bypass approvals, or invent destinations.
 
 The persistent queue uses atomic per-provider claims and request keys. Old queue
 items without a provider are retained as legacy and never automatically executed.
-See [HEYCLICKY.md](HEYCLICKY.md) for the text API/worker and [PHOTON.md](PHOTON.md)
-for account configuration and messaging constraints. Photon is not set up on this
-laptop yet, so real sends remain blocked; no Photon send has been verified.
+See [HEYCLICKY.md](HEYCLICKY.md) for the text API/worker, [PHOTON.md](PHOTON.md)
+for account configuration and messaging constraints, and
+[COMPANION.md](COMPANION.md) for the isolated two-way Photon + Deep Agent setup.
+The configured Photon project has been authenticated and its assigned iMessage
+conversation has been read successfully. A real outbound send and a complete live
+Deep Agent reply approval remain manual end-to-end checks.
 
 ## Two-device captions and optional speech
 
@@ -133,7 +142,7 @@ A real second-device connection and audio playback still need manual validation.
 
 The current default endpoint is:
 
-`https://continually-priest-rural-moments.trycloudflare.com`
+`https://identity-inspection-cfr-items.trycloudflare.com`
 
 Readiness is `GET /ready`; transcription is `POST /transcribe` with multipart field
 `video`. The local backend forwards clips, validates a nonempty transcript and
@@ -141,10 +150,10 @@ Readiness is `GET /ready`; transcription is `POST /transcribe` with multipart fi
 to the team's hosted service. This repository contains the clients and local
 proxy, not the remote model server or its deployment source.
 
-On November 14, 2026 the endpoint reported ready and `max_clip_seconds: 60`. Project
-notes report an Amarel GPU allocation ending November 14 at **11:43 PM Eastern**;
-that allocation and its temporary tunnel must be renewed by the model host. A
-client-side change cannot revive an expired model service.
+On November 15, 2026 the endpoint reported ready with `flare-llm-large` loaded on
+an NVIDIA A100 and `max_clip_seconds: 60`. This is a temporary Cloudflare tunnel;
+if the allocation or tunnel restarts, update the URL again. A client-side change
+cannot revive an expired model service.
 
 Override the address without changing code:
 
@@ -192,9 +201,11 @@ python3 run_checks.py
 
 The runner executes every top-level JavaScript test and all Python unit tests.
 They cover clip queues and duration, command boundaries, readiness races, parser
-failures, handoff retries, SQLite concurrency/restarts, MCP stdio, local API access,
-room publication/receipts, invitation reloads, and client response validation.
-They never upload a real camera clip or send a real message.
+failures, handoff retries, provider-isolated claims, companion approval state,
+Photon inbound validation, SQLite concurrency/restarts, MCP stdio, local API
+access, room publication/receipts, invitation reloads, and client response
+validation. They never call a real model, upload a real camera clip, or send a
+real message.
 
 A live HeyClicky agent has read and claimed a command, prepared an iMessage draft,
 and reported the outcome. The user then sent that draft manually. Continuous

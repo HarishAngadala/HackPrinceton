@@ -17,6 +17,7 @@ from flare import DEFAULT_URL, ready, transcribe
 import room
 import photon
 from commands import CommandStore, default_path, parse_command, route_task
+from companion_store import CompanionStore
 
 BASE_URL = os.environ.get('FLARE_API_URL', DEFAULT_URL)
 BUSY = threading.Lock()
@@ -24,6 +25,8 @@ PAGE = Path(__file__).parent / 'static' / 'index.html'
 TOKEN = secrets.token_urlsafe(32)
 STORE = None
 STORE_LOCK = threading.Lock()
+COMPANION_STORE = None
+COMPANION_STORE_LOCK = threading.Lock()
 HEYCLICKY_EXECUTABLE = None
 
 
@@ -48,6 +51,14 @@ def command_store():
         if STORE is None:
             STORE = CommandStore(default_path())
     return STORE
+
+
+def companion_store():
+    global COMPANION_STORE
+    with COMPANION_STORE_LOCK:
+        if COMPANION_STORE is None:
+            COMPANION_STORE = CompanionStore()
+    return COMPANION_STORE
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -93,6 +104,19 @@ class Handler(BaseHTTPRequestHandler):
                 if not item or item['provider']!='heyclicky':
                     raise ValueError('The HeyClicky result API only accepts general tasks')
                 result = command_store().report(data.get('id'),data.get('claim_token'),data.get('outcome'),data.get('detail'))
+            elif self.path == '/api/companion/next':
+                result = {'command':command_store().claim('deepagent')}
+            elif self.path == '/api/companion/result':
+                item=command_store().get(data.get('id'))
+                if not item or item['provider']!='deepagent':
+                    raise ValueError('The companion result API only accepts Deep Agent tasks')
+                result=command_store().report(data.get('id'),data.get('claim_token'),data.get('outcome'),data.get('detail'))
+            elif self.path == '/api/companion/approve':
+                result=companion_store().approve(data.get('id'),data.get('reply'))
+            elif self.path == '/api/companion/dismiss':
+                result=companion_store().dismiss(data.get('id'))
+            elif self.path == '/api/companion/retry':
+                result=companion_store().retry_blocked(data.get('id'))
             elif self.path == '/api/commands/parse':
                 result = parse_command(data.get('text'))
             elif self.path in ('/api/commands','/api/tasks'):
@@ -169,6 +193,7 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == '/api/config':
             self.send(200, {'api_url': BASE_URL, 'session_token': TOKEN,
                             'photon': photon.status(),
+                            'companion': photon.companion_status(),
                             'lan_enabled': self.server.server_address[0] not in {'127.0.0.1', '::1'},
                             'connector_command': shlex.join([sys.executable, str(PAGE.parent.parent / 'heyclicky_mcp.py'), '--api-url', f'http://127.0.0.1:{self.server.server_port}'])})
         elif self.path in ('/api/commands','/api/tasks'):
@@ -179,6 +204,12 @@ class Handler(BaseHTTPRequestHandler):
                     self.send(200, {'commands': items})
                 except Exception:
                     self.send(500, {'error': 'Local command storage unavailable'})
+        elif self.path == '/api/companion/messages':
+            if self.command_request():
+                try:
+                    store=companion_store()
+                    self.send(200,{'messages':store.list(),'worker':store.runtime_status()})
+                except Exception:self.send(500,{'error':'Local companion storage unavailable'})
         elif self.path == '/api/ready':
             try:
                 self.send(200, ready(BASE_URL))
@@ -216,7 +247,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {'error': 'Transcription is available only on localhost.'})
         if not self.local_request():
             return
-        if self.path in ('/api/commands','/api/tasks') or self.path.startswith(('/api/commands/','/api/tasks/')):
+        if self.path in ('/api/commands','/api/tasks') or self.path.startswith(('/api/commands/','/api/tasks/','/api/companion/')):
             self.command_post()
             return
         if self.path != '/api/transcribe':
